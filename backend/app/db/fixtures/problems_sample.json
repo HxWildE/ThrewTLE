@@ -1,0 +1,157 @@
+[
+  {
+    "source": "leetcode",
+    "source_id": 1,
+    "slug": "two-sum",
+    "title": "Two Sum",
+    "difficulty": "EASY",
+    "content": "Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.\n\nYou may assume that each input would have exactly one solution, and you may not use the same element twice.\n\nYou can return the answer in any order.",
+    "constraints": [
+      "2 <= nums.length <= 10^4",
+      "-10^9 <= nums[i] <= 10^9",
+      "-10^9 <= target <= 10^9",
+      "Only one valid answer exists."
+    ],
+    "input_schema": [
+      { "name": "nums", "type": "integer[]" },
+      { "name": "target", "type": "integer" }
+    ],
+    "support_status": "SUPPORTED",
+    "test_cases": [
+      {
+        "category": "basic",
+        "raw_input": "[2,7,11,15]\n9",
+        "structured_input": { "nums": [2, 7, 11, 15], "target": 9 },
+        "explanation": "Standard LeetCode example 1.",
+        "generation_method": "DATASET_CURATED",
+        "provenance": "leetcode:public_example_1",
+        "expected_output": "[0,1]",
+        "verification_status": "VERIFIED"
+      },
+      {
+        "category": "boundary",
+        "raw_input": "[3,3]\n6",
+        "structured_input": { "nums": [3, 3], "target": 6 },
+        "explanation": "Boundary case: minimal valid array size of 2 with identical numbers summing to target.",
+        "generation_method": "DATASET_CURATED",
+        "provenance": "leetcode:public_example_3",
+        "expected_output": "[0,1]",
+        "verification_status": "VERIFIED"
+      }
+    ]
+  },
+  {
+    "source": "leetcode",
+    "source_id": 1968,
+    "slug": "array-with-elements-not-equal-to-average-of-neighbors",
+    "title": "Array With Elements Not Equal to Average of Neighbors",
+    "difficulty": "MEDIUM",
+    "content": "You are given a 0-indexed array nums of distinct integers. You want to rearrange the elements in the array such that every element in the rearranged array is not equal to the average of its neighbors.\n\nMore formally, the rearranged array should have the property that for every i in the range 1 <= i < nums.length - 1, (nums[i-1] + nums[i+1]) / 2 != nums[i].\n\nReturn any rearrangement of nums that meets this condition.",
+    "constraints": [
+      "3 <= nums.length <= 10^5",
+      "0 <= nums[i] <= 10^5"
+    ],
+    "input_schema": [
+      { "name": "nums", "type": "integer[]" }
+    ],
+    "support_status": "SUPPORTED",
+    "test_cases": [
+      {
+        "category": "basic",
+        "raw_input": "[1,2,3,4,5]",
+        "structured_input": { "nums": [1, 2, 3, 4, 5] },
+        "explanation": "Standard LeetCode example 1.",
+        "generation_method": "DATASET_CURATED",
+        "provenance": "leetcode:public_example_1",
+        "expected_output": null,
+        "verification_status": "UNVERIFIED"
+      },
+      {
+        "category": "structural",
+        "raw_input": "[6,2,0,9,7]",
+        "structured_input": { "nums": [6, 2, 0, 9, 7] },
+        "explanation": "Standard LeetCode example 2.",
+        "generation_method": "DATASET_CURATED",
+        "provenance": "leetcode:public_example_2",
+        "expected_output": null,
+        "verification_status": "UNVERIFIED"
+      }
+    ]
+  },
+  {
+    "source": "leetcode",
+    "source_id": 125,
+    "slug": "valid-palindrome",
+    "title": "Valid Palindrome",
+    "difficulty": "EASY",
+    "content": "A phrase is a palindrome if, after converting all uppercase letters into lowercase letters and removing all non-alphanumeric characters, it reads the same forward and backward. Alphanumeric characters include letters and numbers.\n\nGiven a string s, return true if it is a palindrome, or false otherwise.",
+    "constraints": [
+      "1 <= s.length <= 2 * 10^5",
+      "s consists only of printable ASCII characters."
+    ],
+    "input_schema": [
+      { "name": "s", "type": "string" }
+    ],
+    "support_status": "SUPPORTED",
+    "test_cases": [
+      {
+        "category": "basic",
+        "raw_input": "\"A man, a plan, a canal: Panama\"",
+        "structured_input": { "s": "A man, a plan, a canal: Panama" },
+        "explanation": "Standard LeetCode example with mixed punctuation and case.",
+        "generation_method": "DATASET_CURATED",
+        "provenance": "leetcode:public_example_1",
+        "expected_output": "true",
+        "verification_status": "VERIFIED"
+      },
+      {
+        "category": "boundary",
+        "raw_input": "\" \"",
+        "structured_input": { "s": " " },
+        "explanation": "Boundary case with empty filtered string.",
+        "generation_method": "DATASET_CURATED",
+        "provenance": "leetcode:public_example_3",
+        "expected_output": "true",
+        "verification_status": "VERIFIED"
+      }
+    ]
+  },
+  {
+    "source": "leetcode",
+    "source_id": 53,
+    "slug": "maximum-subarray",
+    "title": "Maximum Subarray",
+    "difficulty": "MEDIUM",
+    "content": "Given an integer array nums, find the subarray with the largest sum, and return its sum.",
+    "constraints": [
+      "1 <= nums.length <= 10^5",
+      "-10^4 <= nums[i] <= 10^4"
+    ],
+    "input_schema": [
+      { "name": "nums", "type": "integer[]" }
+    ],
+    "support_status": "SUPPORTED",
+    "test_cases": [
+      {
+        "category": "basic",
+        "raw_input": "[-2,1,-3,4,-1,2,1,-5,4]",
+        "structured_input": { "nums": [-2, 1, -3, 4, -1, 2, 1, -5, 4] },
+        "explanation": "Standard LeetCode example 1.",
+        "generation_method": "DATASET_CURATED",
+        "provenance": "leetcode:public_example_1",
+        "expected_output": "6",
+        "verification_status": "VERIFIED"
+      },
+      {
+        "category": "boundary",
+        "raw_input": "[1]",
+        "structured_input": { "nums": [1] },
+        "explanation": "Boundary case: Single element array.",
+        "generation_method": "DATASET_CURATED",
+        "provenance": "leetcode:public_example_2",
+        "expected_output": "1",
+        "verification_status": "VERIFIED"
+      }
+    ]
+  }
+]

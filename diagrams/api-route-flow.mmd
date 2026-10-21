@@ -1,0 +1,37 @@
+flowchart LR
+    subgraph RouteHealth ["GET /api/v1/health"]
+        HReq[Client Request] --> HDeps[Depends: get_db_session]
+        HDeps --> HExec["Execute: SELECT 1"]
+        HExec -->|Success| HRes["200 OK: {status: 'healthy', database: 'connected'}"]
+        HExec -->|Failure| HDeg["200 OK: {status: 'degraded', database: 'unhealthy'}"]
+    end
+
+    subgraph RouteProblemsList ["GET /api/v1/problems"]
+        PReq["Client Request<br/>(query, difficulty, limit, offset)"] --> PDeps["Depends: get_problem_service"]
+        PDeps --> PService["ProblemService.search(...)"]
+        PService --> PRepo["ProblemRepository.search(...)"]
+        PRepo --> PDB["SELECT problems with COUNT(*)"]
+        PDB --> PResp["200 OK: PaginatedResponse[ProblemSummary]"]
+    end
+
+    subgraph RouteProblemDetail ["GET /api/v1/problems/{slug}"]
+        DReq["Client Request<br/>path: slug"] --> DDeps["Depends: get_problem_service"]
+        DDeps --> DService["ProblemService.get_by_slug(slug)"]
+        DService --> DRepo["ProblemRepository.get_by_slug(slug)"]
+        DRepo --> DCheck{Found in DB?}
+        DCheck -->|No| D404["404 Not Found: PROBLEM_NOT_FOUND"]
+        DCheck -->|Yes| DResp["200 OK: ProblemDetail (constraints + schemas)"]
+    end
+
+    subgraph RouteGenerate ["POST /api/v1/problems/{slug}/generate"]
+        GReq["Client Request Body<br/>(count, categories, seed)"] --> GVal{Pydantic Validation<br/>1 <= count <= 20}
+        GVal -->|Invalid| G422["422 Unprocessable Entity"]
+        GVal -->|Valid| GDeps["Depends: get_generator_service"]
+        GDeps --> GService["GeneratorService.generate_for_problem(slug, req)"]
+        GService --> GPipeline["GenerationPipeline.run(...)"]
+        GPipeline --> GFormatCheck{ProblemRegistry.check_support}
+        GFormatCheck -->|Unsupported| GUnsupp["422 Unprocessable Entity<br/>UNSUPPORTED_FORMAT"]
+        GFormatCheck -->|Supported| GRun["Execute Multi-Tier Pipeline & Validation"]
+        GRun --> GLog["TestCaseRepository.log_generation_run(...)"]
+        GLog --> GResp["200 OK: GenerateResponse (cases + raw_batch_input)"]
+    end

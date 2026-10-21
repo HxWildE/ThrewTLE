@@ -1,0 +1,40 @@
+stateMachine
+    [*] --> Initialized: Job Triggered (CLI / Cron)
+    
+    state Initialized {
+        [*] --> OpenSession: AsyncSessionLocal()
+        OpenSession --> CreateRunRecord: SyncRepository.start_run(source="huggingface")
+        CreateRunRecord --> SetStatusRunning: Status = "RUNNING"
+    }
+
+    SetStatusRunning --> IngestBatch: IngestionPipeline.ingest_dataset(limit=50)
+
+    state IngestBatch {
+        [*] --> FetchSource: Fetch Hugging Face Rows
+        FetchSource --> NormalizeRows: Normalize & Validate Schema
+        NormalizeRows --> UpsertProblems: Safe Merge into DB
+    }
+
+    IngestBatch --> Evaluation{Execution Outcome}
+
+    state Evaluation {
+        [*] --> CheckExceptions
+    }
+
+    Evaluation --> SuccessState: No Unhandled Errors
+    state SuccessState {
+        RecordCounts: Set inserted_count & updated_count
+        CloseRunSuccess: Status = "SUCCESS", completed_at = now()
+        CommitTx: session.commit()
+    }
+
+    Evaluation --> FailureState: Network / DB / Parse Error
+    state FailureState {
+        RollbackTx: session.rollback()
+        LogDiagnostics: Record error_summary in sync_runs
+        CloseRunFailure: Status = "FAILED", completed_at = now()
+        CommitFailureRecord: session.commit()
+    }
+
+    SuccessState --> [*]: Exit Code 0
+    FailureState --> [*]: Exit Code 1 (Preserves Existing Catalogue)

@@ -1,0 +1,83 @@
+graph TD
+    subgraph Core ["app.core"]
+        Config["config.py<br/>(pydantic-settings)"]
+        Errors["errors.py<br/>(Domain Exceptions)"]
+        Logging["logging.py<br/>(Structured Logger)"]
+        Security["security.py<br/>(Input Sanitizers)"]
+    end
+
+    subgraph Database ["app.db"]
+        BaseClass["base_class.py<br/>(DeclarativeBase)"]
+        Base["base.py<br/>(Model Registry)"]
+        Session["session.py<br/>(async_sessionmaker)"]
+        BaseClass --> Base
+    end
+
+    subgraph Models ["app.models"]
+        MProblem["problem.py"]
+        MTestCase["test_case.py"]
+        MOracle["oracle_result.py"]
+        MGenRun["generation_run.py"]
+        MSyncRun["sync_run.py"]
+        BaseClass --> MProblem
+        BaseClass --> MTestCase
+        BaseClass --> MOracle
+        BaseClass --> MGenRun
+        BaseClass --> MSyncRun
+    end
+
+    subgraph Schemas ["app.schemas"]
+        SCommon["common.py"]
+        SProblem["problem.py"]
+        STestCase["test_case.py"]
+        SGeneration["generation.py"]
+        SSync["sync.py"]
+    end
+
+    subgraph Engine ["app.engine (Framework Agnostic)"]
+        GenBase["generators/base.py"]
+        Strats["strategies/"]
+        Valids["validation/"]
+        Formatters["formatters/"]
+        Reg["problem_registry.py"]
+        Pipeline["pipeline.py"]
+        GenBase --> Strats
+        Strats --> Pipeline
+        Valids --> Pipeline
+        Formatters --> Pipeline
+        Reg --> Pipeline
+    end
+
+    subgraph Repositories ["app.repositories"]
+        RProblem["problem_repo.py"]
+        RTestCase["test_case_repo.py"]
+        RSync["sync_repo.py"]
+        Models --> RProblem
+        Models --> RTestCase
+        Models --> RSync
+    end
+
+    subgraph Services ["app.services"]
+        SrvProblem["problem_service.py"]
+        SrvGen["generator_service.py"]
+        RProblem --> SrvProblem
+        RTestCase --> SrvGen
+        Pipeline --> SrvGen
+    end
+
+    subgraph API ["app.api"]
+        Deps["deps.py"]
+        V1Endpoints["v1/endpoints/"]
+        Router["v1/router.py"]
+        SrvProblem --> Deps
+        SrvGen --> Deps
+        Deps --> V1Endpoints --> Router
+    end
+
+    subgraph AppMain ["app.main"]
+        Main["main.py<br/>(FastAPI App Factory)"]
+        Router --> Main
+        Errors --> Main
+        Config --> Main
+        Session --> Main
+    end

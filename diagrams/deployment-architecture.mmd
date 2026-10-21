@@ -1,0 +1,35 @@
+graph TB
+    subgraph Users ["Client Edge"]
+        Browser["User Browser / Desktop"]
+    end
+
+    subgraph FrontendHosting ["Frontend Edge Tier (Vercel / Cloudflare Pages)"]
+        CDN["Global Edge CDN"]
+        SPA["Pre-compiled Static SPA<br/>(HTML, CSS, JS Bundle in dist/)"]
+        CDN --> SPA
+    end
+
+    subgraph BackendHosting ["Backend Compute Tier (Render / Railway / Fly.io)"]
+        LB["Cloud Load Balancer / Reverse Proxy<br/>(SSL Termination)"]
+        FastAPIHost["FastAPI Production Container<br/>(Uvicorn with 4 Workers)"]
+        Scheduler["Scheduled Worker Process<br/>(GitHub Actions / Cron Job)"]
+        
+        LB --> FastAPIHost
+        Scheduler -->|"Trigger: scripts/run_sync.py"| FastAPIHost
+    end
+
+    subgraph DatabaseTier ["Persistence Tier (Managed PostgreSQL)"]
+        PGPrimary[("Managed PostgreSQL 15+<br/>(Neon / Supabase / Render DB)<br/>Connection Pooler: pgbouncer")]
+        Alembic["Alembic Migrations<br/>(001_initial_schema)"]
+        Alembic --> PGPrimary
+    end
+
+    subgraph EnvironmentConfig ["Environment Secret Injections"]
+        Env["DATABASE_URL: postgresql+asyncpg://...<br/>CORS_ORIGINS: ['https://threwtle.vercel.app']<br/>ENVIRONMENT: production<br/>LOG_LEVEL: INFO<br/>HUGGINGFACE_DATASET_NAME: neulab/leetcode"]
+        Env -.-> FastAPIHost
+        Env -.-> Scheduler
+    end
+
+    Browser -->|"HTTPS: Fetch Web App"| CDN
+    Browser -->|"HTTPS API: /api/v1/*"| LB
+    FastAPIHost -->|"Async Connection Pool"| PGPrimary

@@ -1,0 +1,31 @@
+flowchart TD
+    Trigger([Trigger: scripts/ingest_sample.py]) --> Client[HuggingFaceClient.fetch_sample_rows]
+
+    subgraph DataRetrieval ["Data Extraction & Fallback"]
+        Client --> RequestHF{Call Hugging Face Datasets Server API}
+        RequestHF -->|HTTP 200 OK| ParseRows[Parse 50 Dataset Rows from neulab/leetcode]
+        RequestHF -->|Network Timeout / Offline| LoadLocal[Load Bundled Verified Fixtures<br/>backend/app/db/fixtures/problems_sample.json]
+        ParseRows --> RawQueue[Raw Problems Queue]
+        LoadLocal --> RawQueue
+    end
+
+    subgraph Transformation ["Normalization & Deduplication"]
+        RawQueue --> IterRows[Iterate Row by Row]
+        IterRows --> Normalizer[HuggingFaceNormalizer.normalize_row]
+        Normalizer --> ExtractMeta[Extract question_id, task_id/slug, title, difficulty]
+        Normalizer --> ExtractConstraints[HuggingFaceNormalizer.extract_constraints<br/>Regex search for bounds e.g. <=, length]
+        Normalizer --> InferSchema[HuggingFaceNormalizer.infer_input_schema<br/>Parse canonical_parameter_names]
+        ExtractMeta --> MergeFields[Assemble Canonical Problem Dictionary]
+        ExtractConstraints --> MergeFields
+        InferSchema --> MergeFields
+    end
+
+    subgraph Persistence ["Safe Idempotent Persistence"]
+        MergeFields --> CheckDB{ProblemRepository.get_by_slug}
+        CheckDB -->|Already Exists| SafeUpdate[Update metadata fields<br/>DO NOT overwrite custom test cases]
+        CheckDB -->|New Problem| InsertNew[Insert New Problem Row into DB]
+        SafeUpdate --> Commit[Session Commit]
+        InsertNew --> Commit
+    end
+
+    Commit --> Report([Ingestion Summary: Inserted X, Updated Y])

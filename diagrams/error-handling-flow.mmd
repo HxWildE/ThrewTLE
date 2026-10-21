@@ -1,0 +1,35 @@
+flowchart TD
+    ExceptionOccurs([Exception Triggered in Runtime]) --> ErrorClassifier{Exception Type Check}
+
+    subgraph DomainErrors ["ThrewTLE Domain Exceptions (app.core.errors)"]
+        ErrorClassifier -->|ProblemNotFoundException| Handle404[threwtle_exception_handler]
+        Handle404 --> Res404["HTTP 404 NOT FOUND<br/>{error: {code: 'PROBLEM_NOT_FOUND', message: '...'}}"]
+
+        ErrorClassifier -->|UnsupportedProblemFormatException| Handle422_Unsupp[threwtle_exception_handler]
+        Handle422_Unsupp --> Res422_Unsupp["HTTP 422 UNPROCESSABLE ENTITY<br/>{error: {code: 'UNSUPPORTED_FORMAT', details: {...}}}"]
+
+        ErrorClassifier -->|ConstraintValidationException| Handle422_Constraint[threwtle_exception_handler]
+        Handle422_Constraint --> Res422_Constraint["HTTP 422 UNPROCESSABLE ENTITY<br/>{error: {code: 'CONSTRAINT_VIOLATION', violations: [...]}}"]
+
+        ErrorClassifier -->|DatabaseUnavailableException| Handle503[threwtle_exception_handler]
+        Handle503 --> Res503["HTTP 503 SERVICE UNAVAILABLE<br/>{error: {code: 'DATABASE_UNAVAILABLE', message: '...'}}"]
+    end
+
+    subgraph FrameworkErrors ["FastAPI & Pydantic Validation"]
+        ErrorClassifier -->|RequestValidationError| HandlePydantic[FastAPI Default Handler]
+        HandlePydantic --> ResPydantic["HTTP 422 UNPROCESSABLE ENTITY<br/>{detail: [{loc: ['body', 'count'], msg: '...'}]}"]
+    end
+
+    subgraph IntegrationErrors ["External Integrations Fallback"]
+        ErrorClassifier -->|Hugging Face HTTP Timeout| HFRecover[Catch in HuggingFaceClient<br/>Fallback to local fixtures: problems_sample.json]
+        HFRecover --> ContinueSync[Sync Job Continues Without Crashing]
+
+        ErrorClassifier -->|LeetCode Rate Limit 429| LCRetry[Catch in LeetCodeClient<br/>Exponential Backoff & Retries]
+        LCRetry -->|Max Retries Exceeded| LCAbandon[Return None Gracefully<br/>Never overwrite existing DB data]
+    end
+
+    subgraph UnexpectedErrors ["Unhandled Server Exceptions"]
+        ErrorClassifier -->|Any other Exception| Handle500[generic_exception_handler]
+        Handle500 --> LogTrace[Log Full Traceback to Internal Logger]
+        LogTrace --> Res500["HTTP 500 INTERNAL SERVER ERROR<br/>{error: {code: 'INTERNAL_SERVER_ERROR', message: '...'}}<br/>Zero Leakage of Credentials or Stack Traces"]
+    end

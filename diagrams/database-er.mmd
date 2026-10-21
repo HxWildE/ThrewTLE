@@ -1,0 +1,66 @@
+erDiagram
+    problems ||--o{ test_cases : "has many (CASCADE)"
+    problems ||--o{ generation_runs : "tracks runs (CASCADE)"
+    test_cases ||--o| oracle_results : "evaluated by (CASCADE)"
+
+    problems {
+        uuid id PK "Primary Key (UUID)"
+        string source "Default 'leetcode'"
+        int source_id "Problem number (indexed)"
+        string slug UK "Unique title slug (indexed)"
+        string title "Problem headline"
+        string difficulty "EASY | MEDIUM | HARD"
+        text content "Problem description statement"
+        json constraints "Parsed raw boundary constraints"
+        json input_schema "Parameter names and types"
+        string support_status "SUPPORTED | PARTIAL | UNSUPPORTED"
+        timestamptz created_at "Creation timestamp"
+        timestamptz updated_at "Update timestamp"
+    }
+
+    test_cases {
+        uuid id PK "Primary Key (UUID)"
+        uuid problem_id FK "References problems.id"
+        text raw_input "Exact formatted LeetCode input"
+        json structured_input "Internal dictionary representation"
+        string category "basic | boundary | structural | extremes | stress"
+        text explanation "Specific testing rationale"
+        string generation_method "CURATED | DETERMINISTIC | RANDOM | AI"
+        string provenance "Origin string"
+        string validation_status "VALIDATED | REJECTED"
+        string fingerprint "SHA-256 hash (indexed)"
+        timestamptz created_at "Creation timestamp"
+    }
+
+    oracle_results {
+        uuid id PK "Primary Key (UUID)"
+        uuid test_case_id FK "References test_cases.id (Unique)"
+        text expected_output "Verified oracle return value (nullable)"
+        string comparison_mode "EXACT_MATCH | ANY_PERMUTATION | NONE"
+        string oracle_source "reference_v1 | public_example | unverified"
+        string verification_status "VERIFIED | UNVERIFIED | NOT_APPLICABLE"
+    }
+
+    generation_runs {
+        uuid id PK "Primary Key (UUID)"
+        uuid problem_id FK "References problems.id"
+        int requested_count "Target case count (1-20)"
+        json requested_categories "Array of category filters"
+        int seed "Deterministic PRNG seed"
+        int generated_count "Count after synthesis"
+        int deduplicated_count "Count after SHA-256 filter"
+        float duration_ms "Execution latency in ms"
+        string status "SUCCESS | PARTIAL | FAILED"
+        timestamptz created_at "Execution timestamp"
+    }
+
+    sync_runs {
+        uuid id PK "Primary Key (UUID)"
+        string source "huggingface | leetcode"
+        timestamptz started_at "Start timestamp"
+        timestamptz completed_at "End timestamp (nullable)"
+        int inserted_count "New records inserted"
+        int updated_count "Existing records refreshed"
+        string status "RUNNING | SUCCESS | FAILED"
+        text error_summary "Failure diagnostics (nullable)"
+    }

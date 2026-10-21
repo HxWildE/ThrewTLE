@@ -1,0 +1,49 @@
+sequenceDiagram
+    autonumber
+    participant Socket as Network Socket (TCP)
+    participant Uvicorn as Uvicorn (ASGI Server)
+    participant Starlette as Starlette Middleware Stack
+    participant CORS as CORSMiddleware
+    participant Router as APIRouter (/api/v1/problems/{slug}/generate)
+    participant Pydantic as Pydantic v2 Validation
+    participant DI as FastAPI Dependency Injector (Depends)
+    participant Endpoint as Endpoint Handler (generate_test_cases)
+    participant Service as GeneratorService
+    participant Engine as GenerationPipeline
+    participant DB as AsyncSession (SQLAlchemy)
+
+    Socket->>Uvicorn: Raw HTTP/1.1 or HTTP/2 Request Bytes
+    Uvicorn->>Uvicorn: Parse HTTP Headers & Body
+    Uvicorn->>Starlette: asgi_app(scope, receive, send)
+    Starlette->>CORS: Process Origin header
+    CORS-->>Starlette: Allow Origin / Add Access-Control headers
+
+    Starlette->>Router: Match route: POST /api/v1/problems/{slug}/generate
+    Router->>Pydantic: Parse and Validate request body into GenerateRequest
+    alt Validation Failure (e.g. count > 20)
+        Pydantic-->>Router: Raise RequestValidationError
+        Router-->>Uvicorn: Serialize HTTP 422 JSON Response
+        Uvicorn-->>Socket: Return 422 Unprocessable Entity
+    else Validation Succeeded
+        Pydantic-->>Router: Validated GenerateRequest instance
+        Router->>DI: Resolve Dependencies: Depends(get_generator_service)
+        DI->>DB: Open AsyncSessionLocal() via get_db_session()
+        DI->>Service: Instantiate GeneratorService(session)
+        DI-->>Router: Inject GeneratorService instance
+
+        Router->>Endpoint: Call generate_test_cases(slug, request, service)
+        Endpoint->>Service: service.generate_for_problem(slug, request)
+        Service->>DB: SELECT Problem by slug
+        DB-->>Service: Return Problem instance
+        Service->>Engine: pipeline.run(slug, schema, constraints, count, ...)
+        Engine-->>Service: Generated & Deduplicated Test Cases Dictionary
+        Service->>DB: INSERT INTO generation_runs (status='SUCCESS', ...)
+        Service-->>Endpoint: GenerateResponse Pydantic Model
+
+        Endpoint-->>Router: Return GenerateResponse
+        Router->>Pydantic: Serialize to JSON with model_validate / from_attributes
+        Router->>Starlette: Build JSONResponse (HTTP 200)
+        Starlette->>Uvicorn: send({'type': 'http.response.body', ...})
+        DI->>DB: session.commit() and session.close()
+        Uvicorn-->>Socket: Stream HTTP 200 Response Payload to Browser
+    end

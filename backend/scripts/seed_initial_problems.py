@@ -3,6 +3,7 @@ import json
 import os
 import sys
 from pathlib import Path
+from typing import Optional
 
 # Add backend directory to sys.path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -66,5 +67,4 @@ async def seed_problems(fixtures_path: Optional[str] = None):
 
 
 if __name__ == "__main__":
-    from typing import Optional
     asyncio.run(seed_problems())

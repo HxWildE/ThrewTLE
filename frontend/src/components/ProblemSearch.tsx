@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ChevronRight, Hash, Loader2, Search, Sparkles, X } from 'lucide-react';
+import { ChevronRight, Loader2, Search, Sparkles, X } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { ProblemSummary } from '../types/api';
 

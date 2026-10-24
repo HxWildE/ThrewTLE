@@ -1,5 +1,5 @@
 import random
-from typing import Any, List
+from typing import Any, List, Optional
 from app.engine.generators.base import ArrayType, BaseGenerator, IntegerType
 from app.engine.generators.numeric_generators import NumericGenerator
 

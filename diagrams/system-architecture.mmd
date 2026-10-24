@@ -1,0 +1,64 @@
+graph TB
+    subgraph Client ["Client Browser Tier"]
+        UI["React 18 + Vite SPA<br/>(TailwindCSS & Lucide Icons)"]
+        State["State Hooks<br/>(useProblem, useTestCases)"]
+        ApiClient["Type-Safe ApiClient<br/>(Fetch Wrapper)"]
+        UI --> State --> ApiClient
+    end
+
+    subgraph BackendGateway ["API Gateway & Transport Tier"]
+        Uvicorn["Uvicorn ASGI Server<br/>(Port 8000)"]
+        CORS["CORSMiddleware<br/>(Origins Whitelist)"]
+        Router["FastAPI Application (app.main)<br/>v1 Router Aggregator"]
+        ApiClient -->|"HTTP / REST (JSON)"| Uvicorn --> CORS --> Router
+    end
+
+    subgraph ServiceLayer ["Application & Service Tier"]
+        ProbService["ProblemService<br/>(app.services.problem_service)"]
+        GenService["GeneratorService<br/>(app.services.generator_service)"]
+        Router --> ProbService
+        Router --> GenService
+    end
+
+    subgraph EngineTier ["Test-Case Generation Engine (app.engine)"]
+        Pipeline["GenerationPipeline<br/>(Orchestrator)"]
+        ProblemReg["ProblemRegistry<br/>(Benchmark Rules)"]
+        Strats["Strategies Layer<br/>(Boundary, Structural, Extremes, Stress)"]
+        GenLayer["Generators Layer<br/>(Array, Numeric, String, Matrix)"]
+        Validator["SchemaValidator & Constraints"]
+        Dedup["SHA-256 Deduplicator"]
+        Oracle["ProblemOracle<br/>(Truthful Labeling)"]
+        Formatter["LeetCodeRawFormatter"]
+
+        GenService --> Pipeline
+        Pipeline --> ProblemReg
+        Pipeline --> Strats --> GenLayer
+        Pipeline --> Validator
+        Pipeline --> Dedup
+        Pipeline --> Oracle
+        Pipeline --> Formatter
+    end
+
+    subgraph PersistenceTier ["Persistence & Data Access Tier"]
+        ProbRepo["ProblemRepository"]
+        TestRepo["TestCaseRepository"]
+        SyncRepo["SyncRepository"]
+        Session["AsyncSession Local<br/>(SQLAlchemy 2.0 ORM)"]
+        DB[("PostgreSQL / Async SQLite<br/>(Alembic Migrations)")]
+
+        ProbService --> ProbRepo --> Session --> DB
+        GenService --> TestRepo --> Session
+        SyncRepo --> Session
+    end
+
+    subgraph IntegrationsTier ["External Integrations Tier"]
+        HFClient["HuggingFaceClient<br/>(neulab/leetcode)"]
+        LCClient["LeetCodeClient<br/>(Public GraphQL)"]
+        LLMAdapter["LLMAdapter<br/>(OpenAI / Gemini)"]
+        SyncJob["Catalogue Sync Job<br/>(app.jobs.sync_catalogue)"]
+
+        SyncJob --> HFClient
+        SyncJob --> LCClient
+        SyncJob --> SyncRepo
+        Pipeline -.-> LLMAdapter
+    end

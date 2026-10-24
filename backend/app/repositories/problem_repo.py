@@ -73,10 +73,37 @@ class ProblemRepository:
         total_res = await self.session.execute(count_stmt)
         total = total_res.scalar_one()
 
+        from sqlalchemy import case, cast, String
+        
+        # Smart relevance ordering:
+        # If query is digits, prioritize exact ID match (0), then prefix ID matches (1), then rest
+        order_clauses = []
+        if query and query.strip().isdigit():
+            target_int = int(query.strip())
+            prefix_pattern = f"{query.strip()}%"
+            order_clauses.append(
+                case(
+                    (Problem.source_id == target_int, 0),
+                    (cast(Problem.source_id, String).like(prefix_pattern), 1),
+                    else_=2
+                )
+            )
+        elif query:
+            clean_q = query.strip().lower()
+            order_clauses.append(
+                case(
+                    (func.lower(Problem.title) == clean_q, 0),
+                    (func.lower(Problem.slug) == clean_q, 1),
+                    (func.lower(Problem.title).like(f"{clean_q}%"), 2),
+                    else_=3
+                )
+            )
+        order_clauses.append(Problem.source_id.asc())
+
         stmt = (
             select(Problem)
             .options(selectinload(Problem.test_cases))
-            .order_by(Problem.source_id.asc())
+            .order_by(*order_clauses)
             .limit(limit)
             .offset(offset)
         )

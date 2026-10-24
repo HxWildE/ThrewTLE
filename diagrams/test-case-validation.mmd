@@ -1,0 +1,37 @@
+flowchart TD
+    CandidateInput[Synthesized Candidate Test Input<br/>Dict: parameter_name -> value] --> Stage1[Stage 1: Input Constraint Validation]
+
+    subgraph Stage1_InputValidation ["Input Constraint Validation (SchemaValidator)"]
+        Stage1 --> CheckType{Type Conformance<br/>Array / String / Integer?}
+        CheckType -->|Mismatch| RejectType[Reject Candidate: Schema Mismatch]
+        CheckType -->|Match| CheckBounds{Constraint Boundary Check<br/>min_len <= len <= max_len<br/>min_val <= elem <= max_val}
+        CheckBounds -->|Exceeds Bound| RejectBound[Reject Candidate: Violates Problem Bounds]
+        CheckBounds -->|Within Bounds| ValidationSuccess[Set validation_status = 'VALIDATED']
+    end
+
+    ValidationSuccess --> Stage2[Stage 2: Output Verification Protocol]
+
+    subgraph Stage2_OracleVerification ["Output Verification (ProblemOracle)"]
+        Stage2 --> OracleRouter{Does a Trusted Canonical Oracle Exist?}
+        
+        OracleRouter -->|Problem 1: Two Sum| OracleTwoSum[Compute exact 0-indexed pair indices<br/>nums[i] + nums[j] == target]
+        OracleTwoSum --> ReturnVerified[expected_output = '[i, j]'<br/>verification_status = 'VERIFIED'<br/>comparison_mode = 'EXACT_MATCH']
+
+        OracleRouter -->|Problem 125: Palindrome| OraclePal[Clean alphanumeric, compare with reverse]
+        OraclePal --> ReturnPal[expected_output = 'true' / 'false'<br/>verification_status = 'VERIFIED'<br/>comparison_mode = 'EXACT_MATCH']
+
+        OracleRouter -->|Problem 53: Max Subarray| OracleKadane[Kadane's Algorithm: max contiguous sum]
+        OracleKadane --> ReturnKadane[expected_output = str(max_sum)<br/>verification_status = 'VERIFIED'<br/>comparison_mode = 'EXACT_MATCH']
+
+        OracleRouter -->|Problem 1968: Array Not Equal Avg| OracleSpecial[Special Judge: Any valid permutation acceptable<br/>Simple equality test is INVALID]
+        OracleSpecial --> ReturnUnverifiedSpecial[expected_output = null<br/>verification_status = 'UNVERIFIED'<br/>comparison_mode = 'ANY_VALID_PERMUTATION']
+
+        OracleRouter -->|Arbitrary Problem / No Oracle| OracleDefault[No verified reference solution available]
+        OracleDefault --> ReturnUnverifiedDefault[expected_output = null<br/>verification_status = 'UNVERIFIED'<br/>comparison_mode = 'NONE']
+    end
+
+    ReturnVerified --> FinalCase[Final TestCase Record]
+    ReturnPal --> FinalCase
+    ReturnKadane --> FinalCase
+    ReturnUnverifiedSpecial --> FinalCase
+    ReturnUnverifiedDefault --> FinalCase

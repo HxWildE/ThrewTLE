@@ -1,0 +1,65 @@
+graph TD
+    subgraph RootTier ["Root Application (App.tsx)"]
+        App["App Component<br/>State: selectedSlug, categories, count, seed"]
+        HookProb["useProblem(selectedSlug)<br/>State: problem, loading, error"]
+        HookTest["useTestCases(selectedSlug)<br/>State: testCases, rawBatchInput, generating"]
+        App --> HookProb
+        App --> HookTest
+    end
+
+    subgraph HeaderComponent ["Navigation & Status"]
+        Header["Header.tsx<br/>Probe: apiClient.checkHealth()"]
+        App --> Header
+    end
+
+    subgraph SearchSection ["Problem Selection Tier"]
+        ProblemSearch["ProblemSearch.tsx<br/>State: query, results, isOpen"]
+        Presets["Benchmark Chips<br/>(#1 Two Sum, #1968 Array Avg, #125 Palindrome, #53 MaxSub)"]
+        ProblemSearch --> Presets
+        App --> ProblemSearch
+        ProblemSearch -->|"onSelectProblem(slug)"| App
+    end
+
+    subgraph DisplaySection ["Problem Presentation Tier"]
+        ProblemCard["ProblemCard.tsx<br/>Props: problem"]
+        Constraints["Constraint Pill List"]
+        SchemaTable["Input Parameter Types"]
+        ProblemCard --> Constraints
+        ProblemCard --> SchemaTable
+        App --> ProblemCard
+    end
+
+    subgraph ControlsSection ["Generation Control Tier"]
+        CategorySelector["CategorySelector.tsx<br/>Props: selectedCategories, count, seed, onGenerate"]
+        Chips["Category Chips<br/>(Basic, Boundary, Structural, Extremes, Stress)"]
+        Slider["Count Slider (1-20) & PRNG Seed"]
+        GenBtn["'Generate Test Cases' Button"]
+        CategorySelector --> Chips
+        CategorySelector --> Slider
+        CategorySelector --> GenBtn
+        App --> CategorySelector
+        CategorySelector -->|"handleGenerate()"| HookTest
+    end
+
+    subgraph ResultsSection ["Test Suite Presentation Tier"]
+        TestCaseList["TestCaseList.tsx<br/>Props: testCases, rawBatchInput"]
+        BatchCopy["'Copy All for LeetCode (Raw)'<br/>CopyButton (Primary)"]
+        TestCaseCard["TestCaseCard.tsx<br/>(Rendered per test case)"]
+        RawCode["Raw Code Pre Box"]
+        CardCopy["Single Copy Icon<br/>CopyButton (Icon)"]
+        Rationale["Testing Explanation"]
+        OracleBadge["Verification Status Badge"]
+
+        TestCaseList --> BatchCopy
+        TestCaseList --> TestCaseCard
+        TestCaseCard --> RawCode
+        TestCaseCard --> CardCopy
+        TestCaseCard --> Rationale
+        TestCaseCard --> OracleBadge
+        App --> TestCaseList
+    end
+
+    subgraph ErrorHandling ["Edge Cases & Error Handling"]
+        ErrorState["ErrorState.tsx<br/>(Unsupported format / Network error)"]
+        App --> ErrorState
+    end

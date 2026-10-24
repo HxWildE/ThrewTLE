@@ -1,0 +1,37 @@
+flowchart TD
+    Start([Client Generation Request]) --> InputParams[Extract: problem_slug, input_schema, constraints, count, categories, seed]
+    
+    subgraph LayerCheck ["Format Compatibility Gate"]
+        InputParams --> SupportCheck{ProblemRegistry.check_support}
+        SupportCheck -->|Contains TreeNode / ListNode| RejectUnsupported[Raise UnsupportedProblemFormatException]
+        SupportCheck -->|Supported / Partial| LayerA
+    end
+
+    subgraph CandidateGeneration ["Multi-Tier Candidate Generation"]
+        LayerA["Layer A: Curated Public Cases<br/>(Ingested Examples from DB)"]
+        LayerB["Layer B: Deterministic Strategies<br/>(Boundary, Structural, Extremes, Stress)"]
+        LayerC["Layer C: Benchmark Problem Rules<br/>(Adversarial Arithmetic, Duplicates, etc.)"]
+        LayerD["Layer D: Bounded Random Synthesizer<br/>(Hypothesis-style Bounded PRNG)"]
+        LayerE["Layer E: Optional AI Synthesizer<br/>(LLMAdapter: No-op if keys absent)"]
+
+        LayerA --> RawPool[Aggregated Candidate Pool]
+        LayerB --> RawPool
+        LayerC --> RawPool
+        LayerD --> RawPool
+        LayerE --> RawPool
+    end
+
+    subgraph ValidationDedup ["Layer F: Validation, Deduplication & Ranking"]
+        RawPool --> SchemaVal[Schema & Constraint Validator<br/>Check min/max length & value bounds]
+        SchemaVal -->|Discard Violations| DiscardPool[(Discarded Invalid)]
+        SchemaVal -->|Pass| Dedup[Deduplicator<br/>Compute Canonical SHA-256 Fingerprint]
+        Dedup -->|Duplicate Fingerprint| DiscardPool
+        Dedup -->|Unique Fingerprints| DiversityRanker[Category Diversity Ranker<br/>Round-Robin Balancing across requested categories]
+    end
+
+    subgraph VerificationFormat ["Truthful Verification & Output Formatting"]
+        DiversityRanker --> OracleEval[ProblemOracle.evaluate<br/>Truthful Labeling: Verified vs. Unverified]
+        OracleEval --> Formatter[LeetCodeRawFormatter<br/>Multi-parameter Line-break Serialization]
+        Formatter --> FinalBatch[Assemble Raw Batch String]
+        FinalBatch --> OutputPayload([Final GenerateResponse Payload])
+    end

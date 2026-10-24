@@ -1,0 +1,53 @@
+sequenceDiagram
+    autonumber
+    actor User as Developer
+    participant UI as React Frontend (App.tsx)
+    participant Client as ApiClient (client.ts)
+    participant FastAPI as FastAPI Router (v1)
+    participant Service as GeneratorService
+    participant Engine as GenerationPipeline
+    participant DB as Database (PostgreSQL / SQLite)
+
+    User->>UI: Types query "1968" in ProblemSearch
+    UI->>Client: searchProblems("1968")
+    Client->>FastAPI: GET /api/v1/problems?query=1968
+    FastAPI->>DB: ProblemRepository.search(query="1968")
+    DB-->>FastAPI: Return ProblemSummary matching slug
+    FastAPI-->>Client: 200 OK [PaginatedResponse]
+    Client-->>UI: Update search autocomplete dropdown
+
+    User->>UI: Selects "array-with-elements-not-equal-to-average-of-neighbors"
+    UI->>Client: getProblem("array-with-elements-not-equal-to-average-of-neighbors")
+    Client->>FastAPI: GET /api/v1/problems/{slug}
+    FastAPI->>DB: ProblemRepository.get_by_slug(slug)
+    DB-->>FastAPI: Problem record + constraints + schema
+    FastAPI-->>Client: 200 OK [ProblemDetail]
+    Client-->>UI: Render ProblemCard & CategorySelector
+
+    User->>UI: Adjusts categories (Boundary, Structural, Extremes) & Clicks "Generate"
+    UI->>UI: Set generating=true (show active spinner)
+    UI->>Client: generateTestCases(slug, {count: 10, categories, seed: 42})
+    Client->>FastAPI: POST /api/v1/problems/{slug}/generate
+    FastAPI->>FastAPI: Pydantic Validate (1 <= count <= 20)
+
+    alt Unsupported Schema (e.g., TreeNode / ListNode)
+        FastAPI->>Engine: ProblemRegistry.check_support(slug, schema)
+        Engine-->>FastAPI: Raise UnsupportedProblemFormatException
+        FastAPI-->>Client: 422 Unprocessable Entity (UNSUPPORTED_FORMAT)
+        Client-->>UI: Display informative ErrorState callout
+    else Supported Schema
+        FastAPI->>Service: generate_for_problem(slug, request)
+        Service->>Engine: GenerationPipeline.run(...)
+        Engine->>Engine: Synthesize candidates across requested categories
+        Engine->>Engine: SchemaValidator.validate_input (Filter violations)
+        Engine->>Engine: Deduplicator.filter_unique (SHA-256)
+        Engine->>Engine: ProblemOracle.evaluate (Truthful verification)
+        Engine->>Engine: LeetCodeRawFormatter.format_input & format_batch
+        Engine-->>Service: Return structured candidates & raw_batch_input
+        Service->>DB: TestCaseRepository.log_generation_run(...)
+        Service-->>FastAPI: GenerateResponse
+        FastAPI-->>Client: 200 OK [GenerateResponse]
+        Client-->>UI: Update testCases state & clear spinner
+        User->>UI: Clicks "Copy All for LeetCode (Raw)"
+        UI->>User: Writes batch string to clipboard & shows "Copied!" toast
+    end

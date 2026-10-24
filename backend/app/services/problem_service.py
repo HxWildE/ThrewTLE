@@ -16,6 +16,38 @@ class ProblemService:
         if not problem:
             raise ProblemNotFoundException(slug)
 
+        # On-demand sync with LeetCode GraphQL if content is basic or constraints empty
+        if not problem.constraints or len(problem.constraints) == 0:
+            try:
+                import re
+                from app.integrations.leetcode.client import LeetCodeClient
+                client = LeetCodeClient(timeout_sec=4.0)
+                lc_data = await client.fetch_question_metadata(problem.slug)
+                if lc_data:
+                    raw_content = lc_data.get("content") or ""
+                    constraints = []
+                    if "Constraints:" in raw_content:
+                        parts = raw_content.split("Constraints:")
+                        if len(parts) > 1:
+                            matches = re.findall(r"<li>(.*?)</li>", parts[1], re.DOTALL)
+                            constraints = [re.sub(r"<[^>]*>", "", m).strip() for m in matches if m.strip()]
+                    
+                    if not constraints and raw_content:
+                        matches = re.findall(r"<li>(.*?)</li>", raw_content, re.DOTALL)
+                        constraints = [re.sub(r"<[^>]*>", "", m).strip() for m in matches if m.strip()][:5]
+                    
+                    update_data = {
+                        "slug": problem.slug,
+                        "content": raw_content or problem.content,
+                        "constraints": constraints or problem.constraints,
+                    }
+                    await self.repo.upsert(update_data)
+                    await self.repo.session.commit()
+                    # Reload problem with new content
+                    problem = await self.repo.get_by_slug(slug)
+            except Exception:
+                pass
+
         example_cases = []
         for tc in problem.test_cases:
             exp_out = tc.oracle_result.expected_output if tc.oracle_result else None

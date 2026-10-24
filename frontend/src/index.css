@@ -1,0 +1,132 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-bg-base: #f8fafc;
+    --color-bg-surface: #ffffff;
+    --color-bg-subtle: #f1f5f9;
+    --color-border: #e2e8f0;
+    --color-text-main: #0f172a;
+    --color-text-muted: #64748b;
+    --color-accent: #2563eb;
+    --color-accent-hover: #1d4ed8;
+  }
+
+  .dark {
+    --color-bg-base: #070a12;
+    --color-bg-surface: #0f172a;
+    --color-bg-subtle: #1e293b;
+    --color-border: #334155;
+    --color-text-main: #f8fafc;
+    --color-text-muted: #94a3b8;
+    --color-accent: #f97316;
+    --color-accent-hover: #ea580c;
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    background-color: var(--color-bg-base);
+    color: var(--color-text-main);
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+}
+
+/* Custom Design System Utilities */
+.app-surface {
+  background-color: var(--color-bg-surface);
+  border-color: var(--color-border);
+}
+
+.app-subtle {
+  background-color: var(--color-bg-subtle);
+  border-color: var(--color-border);
+}
+
+.glow-ambient {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 9999px;
+  filter: blur(140px);
+  opacity: 0.15;
+  z-index: 0;
+}
+
+.app-border {
+  border-color: var(--color-border);
+}
+
+/* Light & Dark Cards */
+.theme-card {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
+}
+
+.dark .theme-card {
+  background-color: #0d1322;
+  border: 1px solid #1e293b;
+  box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.4);
+}
+
+.theme-card:hover {
+  border-color: #cbd5e1;
+}
+
+.dark .theme-card:hover {
+  border-color: #334155;
+}
+
+/* Category Container Boxes */
+.category-box-light {
+  background-color: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.05);
+}
+
+.category-box-dark {
+  background-color: #0b101d;
+  border: 1.5px solid #1e293b;
+  box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.5);
+}
+
+/* Code Previews */
+.code-box-light {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #0f172a;
+}
+
+.code-box-dark {
+  background-color: #050811;
+  border: 1px solid #1e293b;
+  color: #fdba74;
+}
+
+/* Sleek Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}

@@ -37,9 +37,54 @@ class GeneratorService:
                 fingerprint=tc.fingerprint
             ))
 
+        # Check and auto-repair input_schema if parameters were mistyped as scalar instead of array
+        input_schema = problem.input_schema
+        needs_repair = False
+        for param in (input_schema or []):
+            p_name = param.get("name", "")
+            p_type = param.get("type", "")
+            if "[]" not in p_type and "array" not in p_type:
+                for c in problem.constraints:
+                    if f"{p_name}.length" in c or f"{p_name}[i]" in c:
+                        needs_repair = True
+                        break
+        if needs_repair or not input_schema:
+            from app.integrations.huggingface.normalizer import HuggingFaceNormalizer
+            repaired_schema = HuggingFaceNormalizer.infer_input_schema({}, problem.content or "", problem.constraints)
+            if repaired_schema:
+                input_schema = repaired_schema
+                problem.input_schema = repaired_schema
+                await self.session.commit()
+
+        # If problem.test_cases was empty, extract public examples from problem.content
+        if not curated_cases and problem.content:
+            from app.integrations.huggingface.normalizer import HuggingFaceNormalizer
+            from app.engine.validation.oracle import ProblemOracle
+            extracted = HuggingFaceNormalizer.extract_example_cases(problem.content)
+            for ex in extracted:
+                exp_out = ex.get("expected_output")
+                ver_stat = "UNVERIFIED"
+                comp_m = "EXACT_MATCH"
+                if exp_out is not None:
+                    oracle_out, oracle_stat, oracle_mode = ProblemOracle.evaluate(problem.slug, ex["structured_input"])
+                    if oracle_stat == "VERIFIED":
+                        exp_out = oracle_out
+                        ver_stat = oracle_stat
+                        comp_m = oracle_mode
+                    else:
+                        ver_stat = "VERIFIED"
+                curated_cases.append(CandidateCase(
+                    category="basic",
+                    structured_input=ex["structured_input"],
+                    explanation=ex.get("explanation", "Standard LeetCode example case."),
+                    expected_output=exp_out,
+                    verification_status=ver_stat,
+                    comparison_mode=comp_m
+                ))
+
         result = self.pipeline.run(
             problem_slug=problem.slug,
-            input_schema=problem.input_schema,
+            input_schema=input_schema,
             constraints=problem.constraints,
             requested_count=req.count,
             requested_categories=req.categories,

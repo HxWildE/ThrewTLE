@@ -49,5 +49,28 @@ class ProblemOracle:
         elif "1968" in slug or "not-equal-to-average" in slug:
             return None, "UNVERIFIED", "ANY_VALID_PERMUTATION"
 
+        # Problem 322: Coin Change
+        elif "coin-change" in slug:
+            coins = structured_input.get("coins", [])
+            amount = structured_input.get("amount", 0)
+            if amount == 0:
+                return "0", "VERIFIED", "EXACT_MATCH"
+            if amount < 0 or not coins:
+                return "-1", "VERIFIED", "EXACT_MATCH"
+            valid_coins = sorted(set(c for c in coins if isinstance(c, int) and c > 0))
+            if not valid_coins:
+                return "-1", "VERIFIED", "EXACT_MATCH"
+            # Fast DP for coin change
+            dp = [float('inf')] * (amount + 1)
+            dp[0] = 0
+            for c in valid_coins:
+                if c > amount:
+                    continue
+                for i in range(c, amount + 1):
+                    if dp[i - c] + 1 < dp[i]:
+                        dp[i] = dp[i - c] + 1
+            ans = dp[amount] if dp[amount] != float('inf') else -1
+            return str(ans), "VERIFIED", "EXACT_MATCH"
+
         # Default fallback for arbitrary uncatalogued problems
         return None, "UNVERIFIED", "NONE"

@@ -10,6 +10,20 @@ ThrewTLE bridges this gap by generating problem-specific, deduplicated, and cons
 
 ---
 
+## 🚀 Core Generation Engine & Validation
+
+ThrewTLE incorporates a multi-tiered test generation pipeline combining property-based synthesis with targeted deterministic edge-case strategies:
+
+- 🧱 **Boundary Strategy**: Evaluates lower/upper length limits, empty or single-element inputs, exact target zero crossings, and minimum/maximum allowable integers.
+- 💥 **Extremes & Overflow Strategy**: Targets full 32-bit integer boundaries ($[-2^{31}, 2^{31}-1]$), identical element floods, and extreme dynamic range values.
+- 🔥 **Stress & Worst-Case Complexity**: Crafted inputs that provoke worst-case performance pitfalls (e.g. anti-quicksort ordering, sorted/reverse-sorted arrays, Hash collision patterns, and deep recursion trees).
+- 🧩 **Structural Strategy**: Systematic distribution patterns including alternating signs, sparse arrays, palindrome structures, and repeated substring/array sequences.
+- 🛡️ **Schema & Constraint Validator**: Strict AST-like and JSON schema parsing guaranteeing that all generated inputs adhere to individual LeetCode problem constraints.
+- ⚖️ **Oracle Reference Verification**: In-memory execution against reference oracles to verify that generated edge cases have valid computable solutions.
+- 🌐 **Hugging Face Normalizer**: Direct integration and normalization of LeetCode dataset problem catalogues.
+
+---
+
 ## 🏗️ Architecture & Technology Stack
 
 - **Backend**: [FastAPI](https://fastapi.tiangolo.com/) (Python 3.14+) with asynchronous endpoints, dependency injection, and Pydantic v2 schemas.
@@ -35,12 +49,14 @@ ThrewTLE/
 │   │   ├── core/                      # Configuration, error handlers, logging
 │   │   ├── db/                        # Database sessions, base models & fixtures
 │   │   ├── engine/                    # Generation strategies, formatters, validation
-│   │   ├── integrations/              # Hugging Face, LeetCode client, optional LLM
+│   │   │   ├── strategies/            # Boundary, extremes, stress, structural generators
+│   │   │   └── validation/            # Schema validator & oracle execution engine
+│   │   ├── integrations/              # Hugging Face normalizer, LeetCode client
 │   │   ├── jobs/                      # Catalogue synchronization background job
 │   │   ├── models/                    # SQLAlchemy 2.0 declarative models
 │   │   ├── repositories/              # Database data access layer
 │   │   ├── schemas/                   # Pydantic v2 request/response schemas
-│   │   ├── services/                  # Business logic orchestrators
+│   │   ├── services/                  # Problem & test generation service orchestrators
 │   │   └── main.py                    # FastAPI application factory
 │   ├── alembic/                       # Database migrations
 │   ├── scripts/                       # Sample ingestion & seed utilities
@@ -103,7 +119,7 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 ## 🧪 Running Automated Tests
 ```bash
 cd backend
-pytest tests/ -v
+python -m pytest tests/ -v
 ```
 
 ---

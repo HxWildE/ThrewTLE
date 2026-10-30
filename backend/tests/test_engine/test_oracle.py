@@ -28,3 +28,22 @@ def test_oracle_unverified_special_judge():
     assert status == "UNVERIFIED"
     assert out is None
     assert comp == "ANY_VALID_PERMUTATION"
+
+
+def test_oracle_coin_change():
+    # Greedy trap: greedy gives 4+1+1 (3 coins), optimal is 3+3 (2 coins)
+    out, status, comp = ProblemOracle.evaluate("coin-change", {"coins": [1, 3, 4], "amount": 6})
+    assert status == "VERIFIED"
+    assert out == "2"
+    assert comp == "EXACT_MATCH"
+
+    # Impossible change
+    out, status, comp = ProblemOracle.evaluate("coin-change", {"coins": [2], "amount": 3})
+    assert status == "VERIFIED"
+    assert out == "-1"
+
+    # Zero amount
+    out, status, comp = ProblemOracle.evaluate("coin-change", {"coins": [1], "amount": 0})
+    assert status == "VERIFIED"
+    assert out == "0"
+

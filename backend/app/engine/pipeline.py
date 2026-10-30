@@ -80,24 +80,33 @@ class GenerationPipeline:
         first_param = input_schema[0] if input_schema else {}
         p_name = first_param.get("name", "nums")
         p_type = first_param.get("type", "integer[]")
-        min_len, max_len, min_val, max_val = self.validator.parse_array_constraints(constraints)
+        param_bounds = self.validator.parse_param_constraints(constraints, input_schema)
+        b = param_bounds.get(p_name, {"min_len": 1, "max_len": 1000, "min_val": -100, "max_val": 100})
+        min_len, max_len = b.get("min_len", 1), b.get("max_len", 1000)
+        min_val, max_val = b.get("min_val", -100), b.get("max_val", 100)
 
         for _ in range(10):
+            struct = {}
             if "[]" in p_type or "array" in p_type:
                 rand_size = rng.randint(min_len, min(max_len, 8))
-                rand_arr = [rng.randint(max(-100, min_val), min(100, max_val)) for _ in range(rand_size)]
-                struct = {p_name: rand_arr}
-                if len(input_schema) > 1 and input_schema[1].get("name") == "target":
-                    # target either matches a random pair or is arbitrary
-                    if len(rand_arr) >= 2 and rng.random() > 0.5:
-                        struct["target"] = rand_arr[0] + rand_arr[1]
-                    else:
-                        struct["target"] = rng.randint(-50, 50)
-                raw_candidates.append(CandidateCase(
-                    category="basic",
-                    structured_input=struct,
-                    explanation="Sanity baseline: Randomized bounded input."
-                ))
+                low = max(min_val, 1) if min_val > 0 else max(-50, min_val)
+                high = min(max_val, 50)
+                if high < low:
+                    high = low
+                rand_arr = [rng.randint(low, high) for _ in range(max(1, rand_size))]
+                struct[p_name] = rand_arr
+            elif "string" in p_type:
+                slen = rng.randint(min_len, min(max_len, 10))
+                struct[p_name] = "".join(rng.choice("abcdefghijklmnopqrstuvwxyz") for _ in range(max(1, slen)))
+            else:
+                struct[p_name] = rng.randint(max(min_val, -50), min(max_val, 50))
+
+            full_struct = self.boundary_strat.populate_parameters(struct, input_schema, constraints, rng, variant_hint="default")
+            raw_candidates.append(CandidateCase(
+                category="basic",
+                structured_input=full_struct,
+                explanation="Sanity baseline: Randomized bounded input."
+            ))
 
         # Layer F: Validation
         valid_candidates: List[CandidateCase] = []

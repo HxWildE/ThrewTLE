@@ -4,12 +4,15 @@ from app.engine.generators.array_generators import ArrayGenerator
 from app.engine.generators.base import ArrayType, IntegerType, StringType
 from app.engine.generators.string_generators import StringGenerator
 from app.engine.strategies.base import BaseStrategy, CandidateCase
+from app.engine.validation.schema_validator import SchemaValidator
 
 
 class StructuralStrategy(BaseStrategy):
     def __init__(self):
+        super().__init__()
         self.arr_gen = ArrayGenerator()
         self.str_gen = StringGenerator()
+        self.validator = SchemaValidator()
 
     def generate_candidates(
         self,
@@ -22,20 +25,30 @@ class StructuralStrategy(BaseStrategy):
         if not input_schema:
             return candidates
 
+        param_bounds = self.validator.parse_param_constraints(constraints, input_schema)
         first_param = input_schema[0]
         p_name = first_param.get("name", "nums")
         p_type = first_param.get("type", "integer[]")
+        b = param_bounds.get(p_name, {"min_len": 1, "max_len": 1000, "min_val": -100, "max_val": 100})
 
-        min_size = 3 if ("1968" in problem_slug or "not-equal" in problem_slug) else 2
+        min_size = b.get("min_len", 1)
+        if "1968" in problem_slug or "not-equal" in problem_slug:
+            min_size = max(min_size, 3)
+        elif "two-sum" in problem_slug:
+            min_size = max(min_size, 2)
+
+        min_elem = b.get("min_val", -100)
+        max_elem = b.get("max_val", 100)
+        low_bound = max(1, min_elem) if min_elem > 0 else max(-50, min_elem)
+        high_bound = min(max_elem, low_bound + 50)
 
         if "[]" in p_type or "array" in p_type:
-            spec = ArrayType(element_type=IntegerType(min_val=-100, max_val=100), min_size=min_size, max_size=100)
-
             # 1. Strictly Sorted Ascending
-            asc_arr = sorted(list(set(rng.randint(1, 50) for _ in range(max(min_size + 2, 5)))))
-            struct_1 = {p_name: asc_arr}
-            if len(input_schema) > 1 and input_schema[1].get("name") == "target":
-                struct_1["target"] = asc_arr[0] + asc_arr[-1]
+            target_len = max(min_size, min(b.get("max_len", 1000), 5))
+            asc_arr = sorted(list(set(rng.randint(low_bound, high_bound) for _ in range(target_len + 3))))[:target_len]
+            if len(asc_arr) < min_size:
+                asc_arr = list(range(low_bound, low_bound + min_size))
+            struct_1 = self.populate_parameters({p_name: asc_arr}, input_schema, constraints, rng, variant_hint="sum")
             candidates.append(CandidateCase(
                 category="structural",
                 structured_input=struct_1,
@@ -44,9 +57,7 @@ class StructuralStrategy(BaseStrategy):
 
             # 2. Strictly Sorted Descending
             desc_arr = sorted(asc_arr, reverse=True)
-            struct_2 = {p_name: desc_arr}
-            if len(input_schema) > 1 and input_schema[1].get("name") == "target":
-                struct_2["target"] = desc_arr[0] + desc_arr[-1]
+            struct_2 = self.populate_parameters({p_name: desc_arr}, input_schema, constraints, rng, variant_hint="sum")
             candidates.append(CandidateCase(
                 category="structural",
                 structured_input=struct_2,
@@ -54,10 +65,9 @@ class StructuralStrategy(BaseStrategy):
             ))
 
             # 3. All Elements Identical (if problem allows duplicates)
-            identical_arr = [7] * max(min_size, 4)
-            struct_3 = {p_name: identical_arr}
-            if len(input_schema) > 1 and input_schema[1].get("name") == "target":
-                struct_3["target"] = 14
+            dup_val = max(low_bound, min(7, high_bound))
+            identical_arr = [dup_val] * max(min_size, min(b.get("max_len", 1000), 4))
+            struct_3 = self.populate_parameters({p_name: identical_arr}, input_schema, constraints, rng, variant_hint="default")
             candidates.append(CandidateCase(
                 category="structural",
                 structured_input=struct_3,
@@ -65,21 +75,22 @@ class StructuralStrategy(BaseStrategy):
             ))
 
             # 4. Arithmetic sequence (Consecutive steps)
-            arith_arr = [2 * i + 1 for i in range(max(min_size, 5))]
-            struct_4 = {p_name: arith_arr}
-            if len(input_schema) > 1 and input_schema[1].get("name") == "target":
-                struct_4["target"] = arith_arr[1] + arith_arr[3]
+            step_len = max(min_size, min(b.get("max_len", 1000), 5))
+            step = 2 if (low_bound + 2 * step_len) <= max_elem else 1
+            arith_arr = [low_bound + step * i for i in range(step_len)]
+            struct_4 = self.populate_parameters({p_name: arith_arr}, input_schema, constraints, rng, variant_hint="default")
             candidates.append(CandidateCase(
                 category="structural",
                 structured_input=struct_4,
-                explanation="Structural case: Direct arithmetic sequence (neighbors equal average) to challenge wiggle-sort."
+                explanation="Structural case: Direct arithmetic sequence to test algorithmic regularity."
             ))
 
             # 5. Alternating High-Low pattern
-            alt_arr = [100 if i % 2 == 0 else 1 for i in range(max(min_size, 6))]
-            struct_5 = {p_name: alt_arr}
-            if len(input_schema) > 1 and input_schema[1].get("name") == "target":
-                struct_5["target"] = 101
+            alt_len = max(min_size, min(b.get("max_len", 1000), 6))
+            val_hi = min(max_elem, 100)
+            val_lo = max(min_elem, 1)
+            alt_arr = [val_hi if i % 2 == 0 else val_lo for i in range(alt_len)]
+            struct_5 = self.populate_parameters({p_name: alt_arr}, input_schema, constraints, rng, variant_hint="default")
             candidates.append(CandidateCase(
                 category="structural",
                 structured_input=struct_5,
@@ -87,21 +98,24 @@ class StructuralStrategy(BaseStrategy):
             ))
 
         elif "string" in p_type:
-            spec = StringType(min_len=1, max_len=100)
+            struct_s1 = self.populate_parameters({p_name: "aaaaabbbbb"}, input_schema, constraints, rng)
             candidates.append(CandidateCase(
                 category="structural",
-                structured_input={p_name: "aaaaabbbbb"},
+                structured_input=struct_s1,
                 explanation="Structural case: Block repeated characters."
             ))
+            struct_s2 = self.populate_parameters({p_name: "racecar"}, input_schema, constraints, rng)
             candidates.append(CandidateCase(
                 category="structural",
-                structured_input={p_name: "racecar"},
+                structured_input=struct_s2,
                 explanation="Structural case: Perfect palindrome sequence."
             ))
+            struct_s3 = self.populate_parameters({p_name: "ab" * 5}, input_schema, constraints, rng)
             candidates.append(CandidateCase(
                 category="structural",
-                structured_input={p_name: "ab" * 10},
+                structured_input=struct_s3,
                 explanation="Structural case: Alternating 2-character repeating cycle."
             ))
 
         return candidates
+

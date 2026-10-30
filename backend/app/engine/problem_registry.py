@@ -24,7 +24,8 @@ class ProblemRegistry:
             "two-sum",
             "array-with-elements-not-equal-to-average-of-neighbors",
             "valid-palindrome",
-            "maximum-subarray"
+            "maximum-subarray",
+            "coin-change"
         }
         if any(b in slug.lower() for b in benchmark_slugs):
             return "SUPPORTED", None
@@ -167,6 +168,72 @@ class ProblemRegistry:
                 structured_input={"nums": [5, 4, -1, 7, 8]},
                 explanation="Structural: Subarray with only a minor negative dip where total sum is positive.",
                 expected_output="23",
+                verification_status="VERIFIED"
+            ))
+
+        elif "coin-change" in slug_clean:
+            # 1. Greedy Trap: Greedy picks 4+1+1 (3 coins), optimal is 3+3 (2 coins)
+            cases.append(CandidateCase(
+                category="structural",
+                structured_input={"coins": [1, 3, 4], "amount": 6},
+                explanation="Adversarial greedy trap: Greedy heuristic selects denomination 4 then 1+1 (3 coins), optimal DP is 3+3 (2 coins).",
+                expected_output="2",
+                verification_status="VERIFIED"
+            ))
+            # 2. Greedy Trap 2: Greedy picks 9+1+1 (3 coins), optimal is 5+6 (2 coins)
+            cases.append(CandidateCase(
+                category="structural",
+                structured_input={"coins": [1, 5, 6, 9], "amount": 11},
+                explanation="Adversarial greedy trap: Greedy algorithm chooses 9+1+1 (3 coins), optimal combination is 5+6 (2 coins).",
+                expected_output="2",
+                verification_status="VERIFIED"
+            ))
+            # 3. Impossible Change
+            cases.append(CandidateCase(
+                category="boundary",
+                structured_input={"coins": [2], "amount": 3},
+                explanation="Boundary: Target amount cannot be formed by any combination of denominations (returns -1).",
+                expected_output="-1",
+                verification_status="VERIFIED"
+            ))
+            # 4. Zero Amount
+            cases.append(CandidateCase(
+                category="boundary",
+                structured_input={"coins": [1], "amount": 0},
+                explanation="Boundary: Target amount of zero requires zero coins.",
+                expected_output="0",
+                verification_status="VERIFIED"
+            ))
+            # 5. Target strictly smaller than all coins
+            cases.append(CandidateCase(
+                category="boundary",
+                structured_input={"coins": [5, 10, 25], "amount": 3},
+                explanation="Boundary: Target amount is strictly less than the smallest available denomination.",
+                expected_output="-1",
+                verification_status="VERIFIED"
+            ))
+            # 6. Parity trap (even denominations with odd target)
+            cases.append(CandidateCase(
+                category="structural",
+                structured_input={"coins": [2, 4, 6], "amount": 7},
+                explanation="Adversarial parity trap: All available coin denominations are even, target amount is odd (mathematically impossible).",
+                expected_output="-1",
+                verification_status="VERIFIED"
+            ))
+            # 7. Exact single coin match
+            cases.append(CandidateCase(
+                category="basic",
+                structured_input={"coins": [1, 2, 5], "amount": 5},
+                explanation="Sanity baseline: Target amount matches an existing denomination exactly.",
+                expected_output="1",
+                verification_status="VERIFIED"
+            ))
+            # 8. Maximum constraint stress
+            cases.append(CandidateCase(
+                category="stress",
+                structured_input={"coins": [1, 2, 5], "amount": 10000},
+                explanation="Stress case: Maximum allowed amount (10^4) testing dynamic programming memory sizing and performance.",
+                expected_output="2000",
                 verification_status="VERIFIED"
             ))
 

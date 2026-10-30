@@ -48,6 +48,27 @@ class ProblemService:
             except Exception:
                 pass
 
+        # Check and auto-repair input_schema if parameters were mistyped as scalar instead of array
+        needs_repair = False
+        for param in (problem.input_schema or []):
+            p_name = param.get("name", "")
+            p_type = param.get("type", "")
+            if "[]" not in p_type and "array" not in p_type:
+                for c in (problem.constraints or []):
+                    if f"{p_name}.length" in c or f"{p_name}[i]" in c:
+                        needs_repair = True
+                        break
+        if needs_repair or not problem.input_schema:
+            try:
+                from app.integrations.huggingface.normalizer import HuggingFaceNormalizer
+                repaired_schema = HuggingFaceNormalizer.infer_input_schema({}, problem.content or "", problem.constraints)
+                if repaired_schema:
+                    problem.input_schema = repaired_schema
+                    await self.repo.upsert({"slug": problem.slug, "input_schema": repaired_schema})
+                    await self.repo.session.commit()
+            except Exception:
+                pass
+
         example_cases = []
         for tc in problem.test_cases:
             exp_out = tc.oracle_result.expected_output if tc.oracle_result else None
@@ -65,6 +86,39 @@ class ProblemService:
                 verification_status=ver_status,
                 comparison_mode=comp_mode
             ))
+
+        # Fallback: extract public example test cases from problem content if DB has 0 test cases
+        if not example_cases and problem.content:
+            from app.engine.formatters.leetcode_raw import LeetCodeRawFormatter
+            from app.engine.validation.oracle import ProblemOracle
+            from app.integrations.huggingface.normalizer import HuggingFaceNormalizer
+            formatter = LeetCodeRawFormatter()
+            extracted = HuggingFaceNormalizer.extract_example_cases(problem.content)
+            for idx, ex in enumerate(extracted):
+                raw_inp = formatter.format_input(ex["structured_input"], problem.input_schema)
+                exp_out = ex.get("expected_output")
+                ver_status = "UNVERIFIED"
+                comp_mode = "EXACT_MATCH"
+                if exp_out is not None:
+                    o_out, o_stat, o_mode = ProblemOracle.evaluate(problem.slug, ex["structured_input"])
+                    if o_stat == "VERIFIED":
+                        exp_out = o_out
+                        ver_status = o_stat
+                        comp_mode = o_mode
+                    else:
+                        ver_status = "VERIFIED"
+
+                example_cases.append(TestCaseResponse(
+                    id=f"example_{idx+1}",
+                    category="basic",
+                    raw_input=raw_inp,
+                    explanation=ex.get("explanation", f"Standard LeetCode example {idx+1}."),
+                    generation_method="CURATED_PUBLIC",
+                    validation_status="VALIDATED",
+                    expected_output=exp_out,
+                    verification_status=ver_status,
+                    comparison_mode=comp_mode
+                ))
 
         return ProblemDetail(
             id=str(problem.id),

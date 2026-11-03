@@ -16,11 +16,26 @@ ThrewTLE incorporates a multi-tiered test generation pipeline combining property
 
 - 🧱 **Boundary Strategy**: Evaluates lower/upper length limits, empty or single-element inputs, exact target zero crossings, and minimum/maximum allowable integers.
 - 💥 **Extremes & Overflow Strategy**: Targets full 32-bit integer boundaries ($[-2^{31}, 2^{31}-1]$), identical element floods, and extreme dynamic range values.
-- 🔥 **Stress & Worst-Case Complexity**: Crafted inputs that provoke worst-case performance pitfalls (e.g. anti-quicksort ordering, sorted/reverse-sorted arrays, Hash collision patterns, and deep recursion trees).
+- 🔥 **Stress & Worst-Case Complexity**: Crafted inputs that provoke worst-case performance pitfalls (e.g. anti-quicksort ordering, sorted/reverse-sorted arrays, hash collision patterns, and deep recursion trees).
 - 🧩 **Structural Strategy**: Systematic distribution patterns including alternating signs, sparse arrays, palindrome structures, and repeated substring/array sequences.
 - 🛡️ **Schema & Constraint Validator**: Strict AST-like and JSON schema parsing guaranteeing that all generated inputs adhere to individual LeetCode problem constraints.
 - ⚖️ **Oracle Reference Verification**: In-memory execution against reference oracles to verify that generated edge cases have valid computable solutions.
 - 🌐 **Hugging Face Normalizer**: Direct integration and normalization of LeetCode dataset problem catalogues.
+
+---
+
+## 🌐 API Reference
+
+The backend exposes a clean, typed REST API under `/api/v1`:
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/api/v1/health` | Service health status and database connectivity check |
+| `GET` | `/api/v1/problems` | Search and filter indexed problems with pagination |
+| `GET` | `/api/v1/problems/{slug}` | Retrieve problem metadata, constraints, and input schemas |
+| `POST` | `/api/v1/problems/{slug}/generate` | Generate edge-case suite (boundary, structural, extremes, stress) |
+
+Interactive OpenAPI documentation is hosted at `http://localhost:8000/docs`.
 
 ---
 
@@ -46,6 +61,7 @@ ThrewTLE/
 ├── backend/
 │   ├── app/
 │   │   ├── api/                       # Versioned REST routers & dependencies
+│   │   │   └── v1/endpoints/          # generate, problems, health endpoints
 │   │   ├── core/                      # Configuration, error handlers, logging
 │   │   ├── db/                        # Database sessions, base models & fixtures
 │   │   ├── engine/                    # Generation strategies, formatters, validation

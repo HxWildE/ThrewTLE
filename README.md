@@ -37,6 +37,28 @@ The backend exposes a clean, typed REST API under `/api/v1`:
 
 Interactive OpenAPI documentation is hosted at `http://localhost:8000/docs`.
 
+### Example Generation Request
+```http
+POST /api/v1/problems/two-sum/generate HTTP/1.1
+Content-Type: application/json
+
+{
+  "count": 10,
+  "categories": ["boundary", "extremes", "stress", "structural"],
+  "seed": 42
+}
+```
+
+The response returns canonical LeetCode raw input strings ready for one-click copy and paste:
+```text
+[0,0]
+0
+[-1000000000,1000000000]
+0
+[2147483647,-2147483648]
+-1
+```
+
 ---
 
 ## 🏗️ Architecture & Technology Stack
@@ -106,7 +128,13 @@ ThrewTLE/
 
 ## ⚡ Quick Start
 
-### 1. Backend Setup
+### 1. Environment Configuration
+Copy the template and adjust environment variables if necessary:
+```bash
+cp .env.example .env
+```
+
+### 2. Backend Setup
 ```bash
 cd backend
 python -m pip install -r requirements.txt
@@ -122,7 +150,7 @@ uvicorn app.main:app --reload --port 8000
 ```
 API Documentation will be available at [http://localhost:8000/docs](http://localhost:8000/docs).
 
-### 2. Frontend Setup
+### 3. Frontend Setup
 ```bash
 cd frontend
 npm install

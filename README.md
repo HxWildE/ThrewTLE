@@ -12,6 +12,21 @@ ThrewTLE bridges this gap by generating problem-specific, deduplicated, and cons
 
 ## 🚀 Core Generation Engine & Validation
 
+```text
+┌────────────────┐      ┌─────────────────────────┐      ┌──────────────────────┐
+│  Client / UI   ├─────►│ FastAPI Engine Pipeline ├─────►│  LeetCode Raw Output │
+└────────────────┘      └───────────┬─────────────┘      └──────────────────────┘
+                                    │
+       ┌────────────────────────────┼───────────────────────────┐
+       ▼                            ▼                           ▼
+┌──────────────┐             ┌──────────────┐            ┌──────────────┐
+│  Strategies  │             │  Validation  │            │ Deduplication│
+│ (Boundaries, │             │ (AST Schema, │            │ (SHA-256     │
+│  Extremes,   │             │  Reference   │            │  Structural  │
+│  Stress)     │             │  Oracle)     │            │  Fingerprint)│
+└──────────────┘             └──────────────┘            └──────────────┘
+```
+
 ThrewTLE incorporates a multi-tiered test generation pipeline combining property-based synthesis with targeted deterministic edge-case strategies:
 
 - 🧱 **Boundary Strategy**: Evaluates lower/upper length limits, empty or single-element inputs, exact target zero crossings, and minimum/maximum allowable integers.

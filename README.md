@@ -1,6 +1,13 @@
 # ThrewTLE ⚡
 > **Deterministic, edge-case test case generator and validation suite for LeetCode problems to expose algorithmic edge failures before submission.**
 
+[![Python](https://img.shields.io/badge/Python-3.14+-3776AB.svg?logo=python&logoColor=white)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![React](https://img.shields.io/badge/React-18.x-61DAFB.svg?logo=react&logoColor=black)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6.svg?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Tests](https://img.shields.io/badge/Pytest-27%20Passed-brightgreen.svg?logo=pytest&logoColor=white)](https://pytest.org)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
 ---
 
 ## 🎯 Overview
@@ -36,6 +43,19 @@ ThrewTLE incorporates a multi-tiered test generation pipeline combining property
 - 🛡️ **Schema & Constraint Validator**: Strict AST-like and JSON schema parsing guaranteeing that all generated inputs adhere to individual LeetCode problem constraints.
 - ⚖️ **Oracle Reference Verification**: In-memory execution against reference oracles to verify that generated edge cases have valid computable solutions.
 - 🌐 **Hugging Face Normalizer**: Direct integration and normalization of LeetCode dataset problem catalogues.
+
+---
+
+## 🧩 Supported Problem Categories
+
+ThrewTLE supports diverse algorithmic problem domains with targeted heuristics:
+
+| Category | Primary Edge Scenarios | Built-in Benchmarks |
+| :--- | :--- | :--- |
+| **Arrays & Two Pointers** | Min/max length, duplicate values, zero sum, signed extremes | LC 1 (*Two Sum*), LC 1968 (*Array With Elements Not Equal to Average*) |
+| **Dynamic Programming & Subarrays** | All-negative numbers, alternating polarities, single elements | LC 53 (*Maximum Subarray*) |
+| **Strings & Palindromes** | Alphanumeric filtering, case insensitivity, empty & single char | LC 125 (*Valid Palindrome*) |
+| **Numeric & Bitwise** | Overflows at $-2^{31}$ and $2^{31}-1$, divide-by-zero bounds | Generic 32-bit Signed Numeric Suites |
 
 ---
 
